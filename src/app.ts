@@ -1,0 +1,26 @@
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import passport from 'passport';
+import "./config/passport";
+
+// @ts-ignore
+import authRouter from '../routes/auth.routes';
+// @ts-ignore
+import userRouter from '../routes/user.routes';
+
+const app = express();
+
+app.use(express.json());
+app.use(passport.initialize());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+
+app.use('/api/v1/auth',authRouter);
+
+app.use('/api/v1/users',userRouter);
+
+
+app.get('/', (req, res) => {
+    res.send('Welcome to the LMS SASS API!');
+});
+export default app;

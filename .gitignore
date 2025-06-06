@@ -1,0 +1,6 @@
+.env
+.env.production
+bin/
+.idea/
+node_modules/
+
