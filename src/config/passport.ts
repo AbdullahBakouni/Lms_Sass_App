@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { users , subscriptions , userSubscriptions } from "../db/schema";
 import { eq } from "drizzle-orm";
 import config from "./config";
 import jwt, {Secret, SignOptions} from "jsonwebtoken";
@@ -36,6 +36,21 @@ passport.use(
                         provider: "google",
                     }).returning();
                     user = newUser[0];
+
+                    const freeSubscription = await db.query.subscriptions.findFirst({
+                        where: eq(subscriptions.name, 'free'),  // تأكد اسم الاشتراك الافتراضي عندك
+                    });
+
+                    if (freeSubscription) {
+                        await db.insert(userSubscriptions).values({
+                            userId: user.id,
+                            subscriptionId: freeSubscription.id,
+                            status: 'active',
+                            startedAt: new Date(),
+                            expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // صلاحية سنة، عدلها حسب حاجتك
+                            externalId: null,
+                        });
+                    }
                 }
 
                 // ✅ أنشئ توكن

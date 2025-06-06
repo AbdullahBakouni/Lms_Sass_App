@@ -1,14 +1,9 @@
 import { Request, Response } from "express";
 import {db} from "../src/db";
-import { users } from "../src/db/schema";
+import { users , userSubscriptions , subscriptions } from "../src/db/schema";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
-import config from "../src/config/config";
 import {setTokenCookie} from "../src/utils/setTokenCookie";
-import { SignOptions , Secret } from "jsonwebtoken";
-
-
 
 export const signUp = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -19,8 +14,6 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-
-        // @ts-ignore
         const existingUser = await db.query.users.findFirst({
             where: eq(users.email, email),
         });
@@ -32,7 +25,6 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // إضافة المستخدم داخل transaction
         const insertedUser = await db.transaction(async (tx) => {
             const [createdUser] = await tx.insert(users).values({
                 name,
@@ -41,21 +33,32 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
                 password: hashedPassword,
             }).returning();
 
+            // جلب subscription المجاني من جدول subscriptions (مثلاً اسمه 'free')
+            const freeSub = await tx.select().from(subscriptions).where(eq(subscriptions.name, 'free')).limit(1).then(rows => rows[0]);
+
+            if (!freeSub) {
+                res.status(409).json({ error: "Free subscription not found" });
+                return;
+            }
+
+            // إدخال اشتراك المستخدم المجاني
+            await tx.insert(userSubscriptions).values({
+                userId: createdUser.id,
+                subscriptionId: freeSub.id,
+                status: 'active',
+                startedAt: new Date(),
+                expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // مثلاً سنة مجانية
+                externalId: null,
+            });
+
             return createdUser;
         });
 
-
-
-        // const token = jwt.sign(
-        //     { id: insertedUser.id, email: insertedUser.email},
-        //     config.JWT_SECRET as Secret,
-        //     {
-        //         expiresIn: config.JWT_EXPIRES_IN || '1d' // Convert to number if it's numeric, or use time string
-        //     } as SignOptions
-        // );
+        if (!insertedUser) {
+            return;
+        }
 
         const token = setTokenCookie(res, { id: insertedUser.id, email: insertedUser.email });
-
 
 
         res.status(201).json({
@@ -68,12 +71,14 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
                 image: insertedUser.image,
                 provider: insertedUser.provider,
             },
+
         });
-    } catch (err) {
-        console.error("Sign up error:", err);
-        res.status(500).json({ error: "Something went wrong" });
+    } catch (error) {
+        console.error('Sign up error:', error);
+        res.status(500).json({ error: 'Something went wrong' });
     }
 };
+
 export const signIn = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body;
@@ -136,11 +141,7 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const googleCallbackHandler = (req: Request, res: Response) => {
-    // const user = req.user as any;
-    // const token = user.token;
-    //
-    // const redirectUrl = `http://localhost:3000/auth/success?token=${token}`;
-    // res.redirect(redirectUrl);
+
 
     const user = req.user as any;
     const token = setTokenCookie(res, { id: user.id, email: user.email });

@@ -7,6 +7,8 @@ import "./config/passport";
 import authRouter from '../routes/auth.routes';
 // @ts-ignore
 import userRouter from '../routes/user.routes';
+// @ts-ignore
+import companionsRouter from '../routes/companion.routes';
 
 const app = express();
 
@@ -18,7 +20,7 @@ app.use(cookieParser());
 app.use('/api/v1/auth',authRouter);
 
 app.use('/api/v1/users',userRouter);
-
+app.use('/api/v1/companions',companionsRouter);
 
 app.get('/', (req, res) => {
     res.send('Welcome to the LMS SASS API!');
