@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { db } from "../db";
-import { users , subscriptions , userSubscriptions } from "../db/schema";
+import {users, subscriptions, userSubscriptions, wallets} from "../db/schema";
 import { eq } from "drizzle-orm";
 import config from "./config";
 import jwt, {Secret, SignOptions} from "jsonwebtoken";
@@ -51,6 +51,11 @@ passport.use(
                             externalId: null,
                         });
                     }
+                    await db.insert(wallets).values({
+                        userId: user.id,
+                        balance: 0,
+                    });
+
                 }
 
                 // ✅ أنشئ توكن

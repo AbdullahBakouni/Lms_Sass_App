@@ -120,3 +120,18 @@ export const subscriptionPrices = pgTable('subscription_prices', {
     isActive: boolean('is_active').default(true).notNull(),
 });
 
+export const wallets = pgTable('wallets', {
+    id: uuid('id').primaryKey().default(sql`uuid_generate_v4()`),
+    userId: uuid('user_id').notNull().unique().references(() => users.id),
+    balance: integer('balance').notNull().default(0),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const walletTransactions = pgTable('wallet_transactions', {
+    id: uuid('id').primaryKey().default(sql`uuid_generate_v4()`),
+    walletId: uuid('wallet_id').references(() => wallets.id).notNull(),
+    amount: integer('amount').notNull(),
+    type: text('type', { enum: ['top_up', 'subscription'] }).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+

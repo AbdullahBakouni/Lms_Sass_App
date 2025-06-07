@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import {db} from "../src/db";
-import { users , userSubscriptions , subscriptions } from "../src/db/schema";
+import { users , userSubscriptions , subscriptions , wallets } from "../src/db/schema";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import {setTokenCookie} from "../src/utils/setTokenCookie";
@@ -49,6 +49,11 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
                 startedAt: new Date(),
                 expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // مثلاً سنة مجانية
                 externalId: null,
+            });
+
+            await tx.insert(wallets).values({
+                userId: createdUser.id,
+                balance: 0,
             });
 
             return createdUser;

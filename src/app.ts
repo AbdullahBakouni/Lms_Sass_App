@@ -10,20 +10,25 @@ import userRouter from '../routes/user.routes';
 // @ts-ignore
 import companionsRouter from '../routes/companion.routes';
 // @ts-ignore
-import paymentRouter from "../routes/payment.routes";
+import walletRouter from '../routes/wallet.routes';
+
+// @ts-ignore
+import subscriptionRouter from "../routes/subscription.routes";
 
 const app = express();
 
-app.use(express.json());
+
+
 app.use(passport.initialize());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(express.json());
 
 app.use('/api/v1/auth',authRouter);
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/companions',companionsRouter);
-app.use('/api/v1/stripe',paymentRouter);
-
+app.use('/api/v1/wallets',walletRouter);
+app.use('/api/v1/subscriptions',subscriptionRouter);
 
 
 
