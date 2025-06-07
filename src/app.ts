@@ -9,6 +9,8 @@ import authRouter from '../routes/auth.routes';
 import userRouter from '../routes/user.routes';
 // @ts-ignore
 import companionsRouter from '../routes/companion.routes';
+// @ts-ignore
+import paymentRouter from "../routes/payment.routes";
 
 const app = express();
 
@@ -18,9 +20,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use('/api/v1/auth',authRouter);
-
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/companions',companionsRouter);
+app.use('/api/v1/stripe',paymentRouter);
+
+
+
 
 app.get('/', (req, res) => {
     res.send('Welcome to the LMS SASS API!');

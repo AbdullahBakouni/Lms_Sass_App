@@ -13,6 +13,8 @@ interface Config {
     GOOGLE_CLIENT_ID: string;
     GOOGLE_CLIENT_SECRET: string;
     GOOGLE_CALLBACK_URL: string;
+    STRIPE_SECRET_KEY: string;
+    STRIPE_WEBHOOK_SECRET_KEY: string;
 }
 
 const config: Config = {
@@ -22,7 +24,9 @@ const config: Config = {
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
-    GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || ''
+    GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || '',
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+    STRIPE_WEBHOOK_SECRET_KEY: process.env.STRIPE_WEBHOOK_SECRET_KEY || ''
 };
 
 export default config;
