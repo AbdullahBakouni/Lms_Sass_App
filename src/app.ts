@@ -15,6 +15,8 @@ import walletRouter from '../routes/wallet.routes';
 // @ts-ignore
 import subscriptionRouter from "../routes/subscription.routes";
 
+import {startSubscriptionReminderCron} from "./corn/subscriptionReminderCron";
+
 const app = express();
 
 
@@ -30,7 +32,7 @@ app.use('/api/v1/companions',companionsRouter);
 app.use('/api/v1/wallets',walletRouter);
 app.use('/api/v1/subscriptions',subscriptionRouter);
 
-
+startSubscriptionReminderCron();
 
 app.get('/', (req, res) => {
     res.send('Welcome to the LMS SASS API!');

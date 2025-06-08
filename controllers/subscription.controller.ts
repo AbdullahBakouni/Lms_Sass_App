@@ -1,16 +1,15 @@
 import { Request, Response } from 'express';
 import {db} from "../src/db"; // import Drizzle DB instance
 import { eq } from 'drizzle-orm';
-import { subscriptionPrices, userSubscriptions, wallets, walletTransactions , payments , subscriptions} from '../src/db/schema';
-
-
+import { subscriptionPrices, userSubscriptions, wallets, walletTransactions , payments , subscriptions , users} from '../src/db/schema';
+import {redis} from "../src/config/upstash";
 
 
 export const subscribeToPlan = async (req: Request, res: Response): Promise<void> => {
     try {
-        // const { userId } = req.params;
-        const { subscriptionPriceId , userId } = req.body;
 
+        const { subscriptionPriceId , userId } = req.body;
+        const [user] = await db.select().from(users).where(eq(users.id, userId));
         if (!subscriptionPriceId) {
             res.status(400).json({ message: 'subscriptionPriceId is required' });
             return;
@@ -22,7 +21,8 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
             interval: subscriptionPrices.interval,
             priceCents: subscriptionPrices.priceCents,
             subscriptionId: subscriptionPrices.subscriptionId,
-            subscriptionName: subscriptions.name
+            subscriptionName: subscriptions.name,
+            currency: subscriptionPrices.currency
         }).from(subscriptionPrices)
             .innerJoin(subscriptions, eq(subscriptionPrices.subscriptionId, subscriptions.id))
             .where(eq(subscriptionPrices.id, subscriptionPriceId));
@@ -88,6 +88,26 @@ export const subscribeToPlan = async (req: Request, res: Response): Promise<void
             });
         });
 
+        // const reminderDate = new Date();
+        // reminderDate.setDate(expiresAt.getDate() - 3);
+        const reminderDate = new Date(Date.now() + 2 * 60 * 1000); // تذكير بعد دقيقتين
+
+        await redis.zadd("subscription_reminders", {
+            score: reminderDate.getTime(),
+            member: JSON.stringify({
+                type: "subscriptionReminder",
+                payload: {
+                    userEmail: user.email,
+                    userName: user.name,
+                    subscription: {
+                        planName: priceRow.subscriptionName,
+                        price: (priceRow.priceCents / 100).toFixed(2), // تحويل السعر من سنت إلى وحدة العملة
+                        currency: priceRow.currency || 'USD', // تأكد من وجود العملة، أو ضع الافتراضي
+                        expiresAt: expiresAt.toISOString()
+                    }
+                },
+            }),
+        });
         res.status(201).json({ message: 'Subscription successful' });
 
     } catch (error) {
