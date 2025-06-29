@@ -2,6 +2,9 @@ import cron from "node-cron";
 import {redis} from "../config/upstash";
 import nodemailer from "nodemailer";
 import config from "../config/config";
+import {db} from "../db";
+import {userSubscriptions} from "../db/schema";
+import {eq, lt , and} from "drizzle-orm";
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -10,16 +13,16 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// دالة جدولة إرسال التذكيرات
+
 export const startSubscriptionReminderCron = () => {
-    // كل دقيقة - يمكنك تغييرها لاحقًا حسب الحاجة
-    cron.schedule("*/1 * * * *", async () => {
-        console.log("⏰ Checking for subscription reminders...");
+
+    cron.schedule("0 8 * * 0", async () => {
+        console.log("⏰ Weekly subscription job started...");
 
         const now = Date.now();
 
         try {
-            // استخدام zrange مع byScore بدل zrangebyscore
+
             const jobs = await redis.zrange("subscription_reminders", 0, now, { byScore: true });
 
             for (const jobStr of jobs as string[]) {
@@ -28,7 +31,7 @@ export const startSubscriptionReminderCron = () => {
                 if (job.type === "subscriptionReminder") {
                     const { userEmail, userName, subscription } = job.payload;
 
-                    // افتراض هيكل subscription: { planName, price, currency, expiresAt }
+
                     const expirationDate = new Date(subscription.expiresAt).toLocaleDateString();
 
                     const html = `
@@ -69,10 +72,27 @@ export const startSubscriptionReminderCron = () => {
                         html,
                     });
 
-                    // حذف التذكير بعد الإرسال
+
                     await redis.zrem("subscription_reminders", jobStr);
-                    console.log(`✅ Reminder sent to ${userEmail}`);
+                    // console.log(`✅ Reminder sent to ${userEmail}`);
                 }
+            }
+            const expiredSubs = await db
+                .select()
+                .from(userSubscriptions)
+                .where(
+                   and(
+                       lt(userSubscriptions.expiresAt, new Date()),
+                       eq(userSubscriptions.status, "active")
+                   )
+                );
+
+            for (const sub of expiredSubs) {
+                await db.update(userSubscriptions)
+                    .set({ status: "expired" })
+                    .where(eq(userSubscriptions.id, sub.id));
+
+                console.log(`🔒 Subscription ${sub.id} expired.`);
             }
 
         } catch (error) {

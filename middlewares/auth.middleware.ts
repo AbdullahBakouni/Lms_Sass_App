@@ -7,12 +7,7 @@ import { eq } from "drizzle-orm";
 
 export const authorize = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // let token;
-        //
-        // // استخراج التوكن من الهيدر
-        // if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-        //     token = req.headers.authorization.split(" ")[1];
-        // }
+
         const token = req.cookies.token;
 
         if (!token) {
