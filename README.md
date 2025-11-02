@@ -136,11 +136,13 @@ This backend exposes modular RESTful routes organized by feature domain.
 ```http
 POST /api/v1/auth/sign-up
 Content-Type: multipart/form-data
+```
 Body:
+```json
 {
-   email: user@example.com,
-   password: strongPassword123,
-   image: (file upload),
+   "email": "user@example.com",
+   "password": "strongPassword123",
+   "image": "(file upload)",
 }
 ```
 **Example: Google OAuth Flow**
